@@ -246,7 +246,10 @@ class Train:
         self.trainer.train()
 
         timestamp = np.datetime64('now').astype('str').replace(':', '-').replace(' ', '_')
-        save_dir = f"{MODEL_ROOT}/{self.model_choice}/{timestamp}"
+
+        best_wer = self.trainer.state.best_metric
+        best_wer_str = f"{best_wer:.4f}" if best_wer is not None else "NA"
+        save_dir = f"{MODEL_ROOT}/{self.model_choice}/{timestamp}_{best_wer_str}"
         print(f"Saving model to {save_dir}...")
         
         os.makedirs(save_dir, exist_ok=True)
