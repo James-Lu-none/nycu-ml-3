@@ -14,7 +14,7 @@ from models import *
 from torch.utils.data import DataLoader
 
 DATA_ROOT = "data/train"
-
+MODEL_ROOT = "model"
 @dataclass
 class DataCollatorSpeechSeq2SeqWithPadding:
     processor: Any
@@ -173,7 +173,7 @@ class Train:
 
         os.environ["WANDB_PROJECT"] = "whisper-finetune-project"
         args = Seq2SeqTrainingArguments(
-            output_dir="./whisper-JacobLinCool-RawBoost",
+            output_dir=f"{MODEL_ROOT}/{self.model_choice}",
 
             per_device_train_batch_size=1,
             per_device_eval_batch_size=1,
@@ -246,7 +246,7 @@ class Train:
         self.trainer.train()
 
         timestamp = np.datetime64('now').astype('str').replace(':', '-').replace(' ', '_')
-        save_dir = f"{self.model_choice}/{timestamp}"
+        save_dir = f"{MODEL_ROOT}/{self.model_choice}/{timestamp}"
         print(f"Saving model to {save_dir}...")
         
         os.makedirs(save_dir, exist_ok=True)
