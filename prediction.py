@@ -117,8 +117,9 @@ def transcribe_audio(processor, model, audio_path, lexicon, max_length_sec=30):
         )
 
     sentence = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
-
-    sentence = correct_taiwanese_sentence(sentence, lexicon)
+    
+    if lexicon:
+        sentence = correct_taiwanese_sentence(sentence, lexicon)
 
     return sentence
 
@@ -144,9 +145,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_dir", type=str, required=True,
                         help="Directory where the trained model is saved.")
-    
+    parser.add_argument("--use_lexicon", action="store_true", help="Whether to use lexicon for correction. Default is True if lexicon file exists.")
     args = parser.parse_args()
-    lexicon = load_lexicon(LEXICON_PATH)
+
+    lexicon = None
+    if args.use_lexicon:
+        lexicon = load_lexicon(LEXICON_PATH)
+    print(f"Using lexicon: {lexicon is not None}")
     processor, model = load_model(args.model_dir)
 
     model_choice = f"{args.model_dir.split('/')[-2]}_{args.model_dir.split('/')[-1]}"
