@@ -113,7 +113,7 @@ def transcribe_audio(processor, model, audio_path, lexicon, max_length_sec=30):
         predicted_ids = model.generate(
             input_features,
             max_length=225,
-            num_beams=1
+            num_beams=3,
         )
 
     sentence = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
