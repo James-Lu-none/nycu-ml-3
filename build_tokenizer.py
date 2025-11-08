@@ -16,9 +16,14 @@ words = []
 with open(LEXICON_PATH, "r", encoding="utf-8") as f:
     for line in f:
         parts = line.strip().split()
-        if len(parts) >= 1:
-            word = parts[0].lower()
-            words.append(word)
+        if len(parts) == 3:
+            words.append(parts[0].lower())
+            words.append(parts[1].lower())
+            words.append(parts[2].lower())
+# removes duplicate words
+words = list(set(words))
+# removes iNULL
+words.remove('inull')
 
 # Remove duplicates and sort
 words = sorted(list(set(words)))
