@@ -29,6 +29,8 @@
 
 ## command examples
 
+run pipeline.ipynb or run commands below step by step:
+
 ```bash
 # perform training data argumentation from 
 # InPath = "./data/train/train"
