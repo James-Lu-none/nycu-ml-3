@@ -28,6 +28,36 @@
 └── visualization.py
 ```
 
+## command examples
+
+first, execute bash sox.sh to preprocess audio files and use preprocess.py to perform data argumentation
+
+```bash
+# use sox to preprocess audio files to 16kHz sampling, single integer, 16 bits 
+# input path: ./data/train/train
+# output path: ./data/train/fixed-train
+bash sox.sh
+
+# perform training data argumentation from 
+# InPath = "./data/train/fixed-train"
+# InLabelPath = "./data/train/train-toneless.csv"
+# to
+# OutPath = "./data/train/noisy-train"
+# OutLabelPath = "./data/train/noisy-train/metadata.csv"
+python preprocess.py
+
+# use dataset "noisy-train" to train model
+python3 train.py --dataset noisy-train --model_choice openai_whisper_small
+
+# predict on test data without lexicon
+python3 prediction.py --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213
+# predict on test data with lexicon
+python3 prediction.py --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213 --use_lexicon
+
+# visualize confusion matrix with a pretrained model state
+python3 visualization.py --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213 --dataset train
+```
+
 ## results
 
 ### openai_whisper_small
