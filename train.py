@@ -183,7 +183,7 @@ class Train:
             metric_for_best_model="levenshtein",
             greater_is_better=False,
 
-            fp16=True,
+            fp16=True, # fp16 has higher precision than bf16 and can be better for fine-grained accuracy
             dataloader_num_workers=4,
             dataloader_pin_memory=True,
 
