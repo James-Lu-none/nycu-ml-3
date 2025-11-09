@@ -11,8 +11,12 @@ from tqdm import tqdm
 InPath = "./data/train/fixed-train"
 InLabelPath = "./data/train/train-toneless.csv"
 
-OutPath = "./data/train/noisy-train"
-OutLabelPath = "./data/train/noisy-train/metadata.csv"
+OutPath = "./data/train/tmp-augmented-audio"
+OutLabelPath = "./data/train/tmp-augmented-audio/metadata.csv"
+
+background_noises_path = "./data/background_noises"
+short_noises_path = "./data/short_noises"
+rir_path = "./data/rir"
 os.makedirs(OutPath, exist_ok=True)
 sr = 22050
 
@@ -24,13 +28,13 @@ augment2 = Compose([
     AddGaussianSNR(min_snr_db=10, max_snr_db=30, p=0.2),
     TimeStretch(min_rate=0.8, max_rate=1.2, leave_length_unchanged=False, p=0.4),
     PitchShift(min_semitones=-4, max_semitones=4, p=0.4),
-    # AddBackgroundNoise(
-    #     sounds_path="background_noises",
-    #     min_snr_db=10,
-    #     max_snr_db=30.0,
-    #     p=0.4),
+    AddBackgroundNoise(
+        sounds_path=background_noises_path,
+        min_snr_db=10,
+        max_snr_db=30.0,
+        p=0.4),
     # AddShortNoises(
-    # sounds_path="short_noises",
+    # sounds_path=short_noises_path,
     # min_snr_db=10,
     # max_snr_db=30.0,
     # noise_rms="relative_to_whole_input",
@@ -38,7 +42,7 @@ augment2 = Compose([
     # max_time_between_sounds=8.0,
     # p=0.3),
     # ApplyImpulseResponse(
-    #         ir_path="rir", p=0.4
+    #         ir_path=rir_path, p=0.4
     #     )
 ])
 
