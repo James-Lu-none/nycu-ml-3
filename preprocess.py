@@ -8,7 +8,7 @@ import nlpaug.flow as naf
 import pandas as pd
 from tqdm import tqdm
 
-InPath = "./data/train/fixed-train"
+InPath = "./data/train/train"
 InLabelPath = "./data/train/train-toneless.csv"
 
 OutPath = "./data/train/tmp-augmented-audio"
@@ -18,7 +18,7 @@ background_noises_path = "./data/background_noises"
 short_noises_path = "./data/short_noises"
 rir_path = "./data/rir"
 os.makedirs(OutPath, exist_ok=True)
-sr = 22050
+sr = 16000
 
 augment1 = naf.Sometimes([
     naa.VtlpAug(sampling_rate=sr, zone=(0.0, 1.0), coverage=1.0, factor=(0.9, 1.1)),
