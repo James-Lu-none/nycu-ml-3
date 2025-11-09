@@ -1,5 +1,33 @@
 # NYCU-IAlI-ML2025 - Recurrent Neural Networks (Taiwanese Speech Recognition)
 
+## project directory structure
+
+```
+.
+├── data
+│   ├── test-random
+│   └── train
+│       ├── fixed-train
+│       ├── lexicon.txt
+│       ├── noisy-train
+│       ├── sample.csv
+│       ├── train
+│       ├── train.csv
+│       └── train-toneless.csv
+├── history
+├── model
+├── output
+├── taiwanese_tokenizer
+├── models.py
+├── build_tokenizer.py
+├── prediction.py
+├── preprocess.py
+├── readme.md
+├── sox.sh
+├── train.py
+└── visualization.py
+```
+
 ## results
 
 ### openai_whisper_small
