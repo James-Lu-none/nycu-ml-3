@@ -104,3 +104,20 @@ def openai_whisper_large_v3():
     model.config.suppress_tokens = []
     
     return processor, model
+
+def openai_whisper_large_v3_turbo():
+    # 0.8B parameters
+    model_name = "openai/whisper-large-v3-turbo"
+
+    processor = AutoProcessor.from_pretrained(
+        model_name,
+        task="transcribe"
+    )
+    model = AutoModelForSpeechSeq2Seq.from_pretrained(model_name)
+    model.config.use_cache = False
+    model.generation_config.task = "transcribe"
+    model.generation_config.language = None
+    model.config.forced_decoder_ids = None
+    model.config.suppress_tokens = []
+    
+    return processor, model
