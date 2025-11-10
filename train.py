@@ -160,7 +160,7 @@ class Train:
 
             per_device_train_batch_size=1,
             per_device_eval_batch_size=1,
-            gradient_accumulation_steps=1,
+            gradient_accumulation_steps=16,
 
             max_grad_norm=1.0,
 
@@ -169,7 +169,7 @@ class Train:
             lr_scheduler_type="linear",
             weight_decay=0.01,
 
-            num_train_epochs=5,
+            num_train_epochs=10,
 
             eval_strategy="steps",
             eval_steps=300,
