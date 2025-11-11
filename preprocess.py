@@ -10,25 +10,36 @@ import pandas as pd
 from tqdm import tqdm
 
 BASE = "./data/train/train"
-InPath = os.path.join(BASE, "train")
-InLabelPath = os.path.join(BASE, "train-toneless.csv")
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", type=str, required=True)
-parser.add_argument("--n_augmentations", type=int, required=True)
-args = parser.parse_args()
-if args.dataset not in ["TPG", "TPGB", "TPGBIR"]:
-    raise ValueError("Invalid dataset name. Choose from: TPG, TPGB, TPGBIR")
-os.system(f"rm -rf ./data/train/train/{args.dataset}")
-    
-print("generating augmented dataset:", args.dataset)
-OutPath = os.path.join(BASE, args.dataset)
-OutLabelPath = os.path.join(OutPath, "metadata.csv")
 
 background_noises_path = os.path.join(BASE, "background_noises")
 short_noises_path = os.path.join(BASE, "short_noises")
 rir_path = os.path.join(BASE, "rir")
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--type", type=str, required=True)
+parser.add_argument("--src_dir", type=str, required=True)
+parser.add_argument("--label_file", type=str, required=True)
+parser.add_argument("--dist_dir", type=str, required=True)
+parser.add_argument("--n_augmentations", type=int, required=True)
+args = parser.parse_args()
+
+InPath = os.path.join(BASE, args.src_dir)
+InLabelPath = os.path.join(BASE, args.label_file)
+OutPath = os.path.join(BASE, args.dist_dir)
+OutLabelPath = os.path.join(OutPath, "metadata.csv")
 os.makedirs(OutPath, exist_ok=True)
+
+print("generating augmented data for type:", args.type)
+print("input path:", InPath)
+print("input label file:", InLabelPath)
+print("output path:", OutPath)
+print("output label file:", OutLabelPath)
+print("number of augmentations per file:", args.n_augmentations)
+
+if args.type not in ["TPG", "TPGB", "TPGBIR"]:
+    raise ValueError("Invalid dataset name. Choose from: TPG, TPGB, TPGBIR")
+os.system(f"rm -rf ./data/train/train/{args.type}")
+    
 sr = 16000
 
 augment1 = naf.Sometimes([
@@ -101,7 +112,7 @@ for file in tqdm(files, desc="Processing files", unit="file"):
         # augment1 may return a list; ensure we pass a single array to augment2
         src = augmented_samples1[0] if isinstance(augmented_samples1, (list, tuple)) else augmented_samples1
         augment2 = None
-        match args.dataset:
+        match args.type:
             case "TPG":
                 augment2 = augment_TPG
             case "TPGB":
