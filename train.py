@@ -14,7 +14,9 @@ from models import *
 from torch.utils.data import DataLoader
 import json
 import matplotlib.pyplot as plt
+import logging
 
+logging.getLogger("transformers.tokenization_utils_base").setLevel(logging.ERROR)
 
 BASE = "data/train/train"
 MODEL_ROOT = "model"
