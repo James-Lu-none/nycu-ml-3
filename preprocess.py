@@ -8,6 +8,8 @@ import nlpaug.augmenter.audio as naa
 import nlpaug.flow as naf
 import pandas as pd
 from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 BASE = "./data/train/train"
 
@@ -90,13 +92,11 @@ outLabels = []
 
 files = [f for f in os.listdir(InPath) if f.endswith(".wav")]
 for file in tqdm(files, desc="Processing files", unit="file"):
-    try:
-        file_id = int(os.path.splitext(file)[0])
-    except ValueError:
-        tqdm.write(f"[WARNING] Skipping non-numeric filename: {file}")
-        continue
-
-    row = inLabels[inLabels["id"] == file_id]
+    
+    file_id = os.path.splitext(file)[0].strip()
+    inLabels["id_norm"] = inLabels["id"].astype(str).str.strip().str.lower()
+    
+    row = inLabels[inLabels["id_norm"] == file_id]
     if row.empty:
         tqdm.write(f"[WARNING] No label found for file {file}")
         continue
