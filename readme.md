@@ -88,6 +88,9 @@ submit score: 5.93939
 [eval with normalized Levenshtein distance + train with TPGBIR augmentation (5x augs, 10 epoch)](history/openai_whisper_small_2025-11-10T21-57-21_0.0380_2025-11-10T21-58-44.csv)
 submit score: 4.98989
 
+[eval with normalized Levenshtein distance + train with train_TPGBIR augmentation (5x augs, 10 epoch) + train with dict-sentence_TPGBIR augmentation (1x augs, 10 epoch) + train with train_TPGBIR augmentation (5x augs, 10 epoch)](history/openai_whisper_small_2025-11-12T07-55-19_0.0282_2025-11-12T07-56-40.csv)
+submit score: 4.33333
+
 ### openai_whisper_medium
 
 
