@@ -265,10 +265,10 @@ class Train:
         print(f"Metrics saved to: {csv_path}")
 
         plt.figure()
-        if "loss" in df.columns:
-            plt.plot(df["step"], df["loss"], label="train_loss")
-        if "eval_loss" in df.columns:
-            plt.plot(df["step"], df["eval_loss"], label="eval_loss")
+        df["loss"] = df["loss"].interpolate()
+        df["eval_loss"] = df["eval_loss"].interpolate()
+        plt.plot(df["step"], df["loss"], label="train_loss")
+        plt.plot(df["step"], df["eval_loss"], label="eval_loss")
 
         plt.xlabel("Step")
         plt.ylabel("Loss")
