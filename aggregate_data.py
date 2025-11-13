@@ -38,18 +38,21 @@ def duplicate_data(df, src_dir, dist_dir, n_duplicates):
         for i in range(n_duplicates):
             new_id = f"{file_id}_dup{i+1}"
             dist_file_path = os.path.join(dist_dir, f"{new_id}.wav")
-            os.system(f"cp {src_file_path} {dist_file_path}")
+            os.system(f'cp "{src_file_path}" "{dist_file_path}"')
             new_rows.append({'id': new_id, 'text': text})
     new_df = pd.DataFrame(new_rows)
     return new_df
 
-dup_train_df = duplicate_data(train_df, train_dir, hybrid_dir, 5)
-hybrid_df = pd.concat([dup_train_df, dict_sentence_df, dict_word_df], ignore_index=True)
+dup_train_df = duplicate_data(train_df, train_dir, hybrid_dir, 6)
+dup_dict_sentence_df = duplicate_data(dict_sentence_df, dict_sentence_dir, hybrid_dir, 1)
+dup_dict_word_df = duplicate_data(dict_word_df, dict_word_dir, hybrid_dir, 1)
+
+hybrid_df = pd.concat([dup_train_df, dup_dict_sentence_df, dup_dict_word_df], ignore_index=True)
 check_conflicts(hybrid_df, "hybrid dataset")
 
-print(f"Total entries in train dataset after duplication: {len(dup_train_df)}")
-print(f"Total entries in dict-sentence dataset: {len(dict_sentence_df)}")
-print(f"Total entries in dict-word dataset: {len(dict_word_df)}")
+print(f"Total entries in duplicated train dataset: {len(dup_train_df)}")
+print(f"Total entries in duplicated dict-sentence dataset: {len(dup_dict_sentence_df)}")
+print(f"Total entries in duplicated dict-word dataset: {len(dup_dict_word_df)}")
 
 print(f"Total entries in hybrid dataset: {len(hybrid_df)}")
 hybrid_df.to_csv(hybrid_csv, index=False)
