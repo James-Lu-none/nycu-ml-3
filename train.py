@@ -130,7 +130,7 @@ class Train:
         self.train_dataset = None
         self.eval_dataset = None
         self.trainer = None
-
+        os.makedirs(os.path.join(MODEL_ROOT,self.model_choice), exist_ok=True)
 
     def load_model(self):
         try:
@@ -151,7 +151,8 @@ class Train:
         print(f"Loading dataset from: {dataset_dir}")
         df = pd.read_csv(metadata_path)
         print(f"Total samples in dataset: {len(df)}")
-
+        # only take 0.1% for quick testing
+        # df = df.sample(frac=0.01, random_state=42).reset_index(drop=True)
         train_df, val_df = train_test_split(df, test_size=0.1, random_state=42, shuffle=True)
 
         # Load folder containing metadata.csv + wav files
@@ -165,9 +166,9 @@ class Train:
         args = Seq2SeqTrainingArguments(
             output_dir=f"{MODEL_ROOT}/{self.model_choice}",
 
-            per_device_train_batch_size=1,
-            per_device_eval_batch_size=1,
-            gradient_accumulation_steps=16,
+            per_device_train_batch_size=4,
+            per_device_eval_batch_size=4,
+            gradient_accumulation_steps=4,
 
             max_grad_norm=1.0,
 
@@ -179,9 +180,9 @@ class Train:
             num_train_epochs=5,
 
             eval_strategy="steps",
-            eval_steps=300,
+            eval_steps=500,
             save_strategy="steps",
-            save_steps=300,
+            save_steps=500,
             save_total_limit=1,
 
             logging_steps=50,
