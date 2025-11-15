@@ -40,7 +40,7 @@ class visualization:
         self.processor = AutoProcessor.from_pretrained(model_dir)
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(model_dir)
         self.model.eval()
-        self.model.to("cpu")
+        self.model.to("cuda" if torch.cuda.is_available() else "cpu")
 
     def transcribe_audio(self, audio_path, max_length_sec=30):
         audio, sr = librosa.load(audio_path, sr=16000)
@@ -72,8 +72,10 @@ class visualization:
 
         wav_files = sorted([f for f in os.listdir(DATA) if f.lower().endswith(".wav")])
 
-        # take a subset for faster processing during testing
-        wav_files = wav_files[:100]
+        # take randomly for faster processing during testing
+        np.random.seed(42)
+        wav_files = list(np.random.choice(wav_files, size=min(5000, len(wav_files)), replace=False))
+        
         for file in tqdm(wav_files, desc="Processing audio", unit="file"):
             full_path = os.path.join(DATA, file)
             audio_id = os.path.splitext(file)[0]
@@ -182,10 +184,19 @@ class visualization:
 
         row_sums = cm.sum(axis=1, keepdims=True)
         annot_values = np.divide(cm, row_sums, out=np.zeros_like(cm, dtype=float), where=row_sums != 0) * 100
+
+        # Sort by diagonal values (lowest to highest)
+        diag_values = np.diag(annot_values)
+        sort_idx = np.argsort(diag_values)
+
+        # Reorder confusion matrix, percentages, and labels
+        cm = cm[np.ix_(sort_idx, sort_idx)]
+        annot_values = annot_values[np.ix_(sort_idx, sort_idx)]
+        labels = [labels[i] for i in sort_idx]
+
         plt.figure(figsize=(max(8, len(labels) * 0.6), max(6, len(labels) * 0.6)))
         # heatmap color follows the normalized values
-        sns.heatmap(annot_values, annot=annot_values, fmt=".1f",
-                    xticklabels=labels, yticklabels=labels, cmap="Blues")
+        sns.heatmap(annot_values, annot=cm, fmt="d", xticklabels=labels, yticklabels=labels, cmap="Blues")
         plt.xlabel("Predicted")
         plt.ylabel("Ground Truth")
         plt.title("Word-level Confusion Matrix")
