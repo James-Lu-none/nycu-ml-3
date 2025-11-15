@@ -121,20 +121,20 @@ stage-wise training plots:
 ### whisper note
 
 ```
-in a model dir:
+usages of file in a model dir:
 .
-├── added_tokens.json
-├── config.json
-├── generation_config.json
-├── merges.txt
-├── model.safetensors
-├── normalizer.json
-├── preprocessor_config.json
-├── special_tokens_map.json
-├── tokenizer_config.json
-├── tokenizer.json
-├── training_args.bin
-└── vocab.json
+├── added_tokens.json -> tokenizer added tokens info
+├── config.json -> model architecture and hyperparameters
+├── generation_config.json -> generation parameters like num_beams
+├── merges.txt -> tokenizer merges for BPE
+├── model.safetensors -> model weights
+├── normalizer.json -> text normalizer rules
+├── preprocessor_config.json -> feature extractor config
+├── special_tokens_map.json -> tokenizer special tokens info
+├── tokenizer_config.json -> tokenizer config
+├── tokenizer.json -> tokenizer vocab and merges
+├── training_args.bin -> training arguments used in Trainer
+└── vocab.json -> tokenizer vocabulary
 ```
 
 #### terms
