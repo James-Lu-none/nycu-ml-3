@@ -79,6 +79,8 @@ class visualization:
             audio_id = os.path.splitext(file)[0]
 
             sentence = self.transcribe_audio(full_path)
+            # remove <DEL> and <INS> tokens if any
+            sentence = re.sub(r"<DEL>|<INS>", "", sentence).strip()
             rows.append({"id": f"{audio_id}.wav", "sentence": sentence})
 
         df = pd.DataFrame(rows)
@@ -143,6 +145,8 @@ class visualization:
             gt_words = row['sentence_gt'].strip().split()
             pred_words = row['sentence_pred'].strip().split()
             if not gt_words and not pred_words:
+                continue
+            if len(gt_words) != len(pred_words):
                 continue
             aligned_pairs = align_words(gt_words, pred_words)
             for gt_word, pred_word in aligned_pairs:
