@@ -78,9 +78,7 @@ class visualization:
             full_path = os.path.join(DATA, file)
             audio_id = os.path.splitext(file)[0]
 
-            sentence = self.transcribe_audio(full_path)
-            # remove <DEL> and <INS> tokens if any
-            sentence = re.sub(r"<DEL>|<INS>", "", sentence).strip()
+            sentence = self.transcribe_audio(full_path)     
             rows.append({"id": f"{audio_id}.wav", "sentence": sentence})
 
         df = pd.DataFrame(rows)
@@ -140,18 +138,33 @@ class visualization:
 
         y_true = []
         y_pred = []
-
+        csv_out = []
         for _, row in merged.iterrows():
             gt_words = row['sentence_gt'].strip().split()
             pred_words = row['sentence_pred'].strip().split()
             if not gt_words and not pred_words:
                 continue
-            if len(gt_words) != len(pred_words):
-                continue
             aligned_pairs = align_words(gt_words, pred_words)
             for gt_word, pred_word in aligned_pairs:
                 y_true.append(gt_word)
                 y_pred.append(pred_word)
+            a, b = zip(*aligned_pairs)
+            csv_out.append({
+                "id": row['id'],
+                "ground_truth": a,
+                "prediction": b,
+            })
+        aligned_df = pd.DataFrame(csv_out)
+
+        with open(os.path.join(OUTPUT_ROOT,"word_alignments.txt"), "w") as f:
+            for _, row in aligned_df.iterrows():
+                f.write("\n")
+                f.write(f"File name: {row['id']}\n")
+                f.write("True: ")
+                f.write(" ".join(row['ground_truth']) + "\n")
+                f.write("Pred: ")
+                f.write(" ".join(row['prediction']) + "\n")
+                f.write("\n")
 
         if not y_true:
             raise ValueError("No valid word alignments found to build confusion matrix.")
