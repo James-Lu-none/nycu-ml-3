@@ -260,7 +260,7 @@ class Train:
         self.load_model()
         self.load_data()
         self.setup_trainer()
-
+        print("Using evaluation function:", self.eval_function)
         print("Training started...")
         self.trainer.train()
 
