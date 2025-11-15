@@ -120,6 +120,7 @@ stage-wise training plots:
 
 ### whisper note
 
+```
 in a model dir:
 .
 ├── added_tokens.json
@@ -134,6 +135,7 @@ in a model dir:
 ├── tokenizer.json
 ├── training_args.bin
 └── vocab.json
+```
 
 #### terms
 
