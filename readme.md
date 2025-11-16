@@ -1,6 +1,10 @@
-# NYCU-IAlI-ML2025 - Recurrent Neural Networks (Taiwanese Speech Recognition)
+# NYCU-IAII-ML2025 — Taiwanese Speech Recognition
 
-## project directory structure
+End-to-end speech recognition system built on OpenAI Whisper variants. The project focuses on creating robust Taiwan Minnan speech models by combining diverse augmentations and detailed evaluation tracking.
+
+---
+
+## Project Layout
 
 ```
 .
@@ -22,217 +26,184 @@
 ├── build_tokenizer.py
 ├── prediction.py
 ├── preprocess.py
-├── readme.md
 ├── train.py
 └── visualization.py
 ```
 
-## command examples
+- `data/`: raw and augmented corpora, metadata, lexicon resources.  
+- `model/`: checkpoints grouped by model choice and timestamp.  
+- `history/`: CSV logs and visualizations for each training stage.  
+- `taiwanese_tokenizer/`: custom tokenizer artifacts referenced by `build_tokenizer.py`.  
+- Entry scripts: `preprocess.py`, `train.py`, `prediction.py`, `visualization.py`.
 
-run pipeline.ipynb or run commands below step by step:
+---
+
+## Quick Start Workflow
+
+Use `pipeline.ipynb` for a notebook walkthrough, or execute the steps below.
+
+### 1. Augment and Normalize Training Audio
 
 ```bash
-# perform training data augmentation from 
-# InPath = "./data/train/train"
-# InLabelPath = "./data/train/train-toneless.csv"
-# to
-# OutPath = "./data/train/tmp-augmented-audio"
-# OutLabelPath = "./data/train/tmp-augmented-audio/metadata.csv"
-# during the augmentation, all audio files are resampled to 16kHz
-python preprocess.py
-
-# use dataset "tmp-augmented-audio" to train model "openai_whisper_small" with evaluation function "wer"
-python3 train.py --dataset tmp-augmented-audio --model_choice openai_whisper_small --eval_function wer
-# continue with pre-trained state and use dataset "tmp-augmented-audio" to train model "openai_whisper_small" with evaluation function "lev"
-python3 train.py --dataset tmp-augmented-audio --model_choice openai_whisper_small --model_state_path model/openai_whisper_small/2025-11-08T11-10-10_0.0213 --eval_function lev
-
-# predict on test data without lexicon
-python3 prediction.py --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213
-# predict on test data with lexicon
-python3 prediction.py --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213 --use_lexicon
-
-# visualize confusion matrix with a pretrained model state
-python3 visualization.py --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213
+# All files are resampled to 16 kHz during augmentation.
+python preprocess.py \
+  --in_path ./data/train/train \
+  --in_label_path ./data/train/train-toneless.csv \
+  --out_path ./data/train/tmp-augmented-audio \
+  --out_label_path ./data/train/tmp-augmented-audio/metadata.csv
 ```
 
-## Augmentation examples
+### 2. Train Whisper Models
 
-1. Background Noises + Short Noises (transient sounds)
-https://github.com/karoldvl/ESC-50/archive/master.zip
+```bash
+# Train from scratch with WER evaluation.
+python train.py \
+  --dataset tmp-augmented-audio \
+  --model_choice openai_whisper_small \
+  --eval_function wer
 
+# Resume from a checkpoint and switch to normalized Levenshtein distance.
+python train.py \
+  --dataset tmp-augmented-audio \
+  --model_choice openai_whisper_small \
+  --model_state_path model/openai_whisper_small/2025-11-08T11-10-10_0.0213 \
+  --eval_function lev
 ```
+
+### 3. Run Inference
+
+```bash
+# Plain decoding.
+python prediction.py \
+  --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213
+
+# Constrained decoding that applies the lexicon file.
+python prediction.py \
+  --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213 \
+  --use_lexicon
+```
+
+### 4. Visualize Confusion Matrices
+
+```bash
+python visualization.py \
+  --model_dir model/openai_whisper_small/2025-11-08T11-10-10_0.0213
+```
+
+---
+
+## Data Augmentation Resources
+
+| Purpose                                   | Source                                                                 | Notes                                                                 |
+|-------------------------------------------|------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| Background + short transient noises       | https://github.com/karoldvl/ESC-50/archive/master.zip                  | Extract `ESC-50-master/audio/` to `data/background_noises/`.          |
+| Room impulse responses (reverberations)   | https://github.com/RoyJames/room-impulse-responses                     | Convolve with clean speech for TPGBIR-style augmentation.             |
+
+Example for ESC-50:
+
+```bash
 cd data
 unzip master.zip
 mv ESC-50-master/audio/ background_noises
 ```
 
-3. Room Impulse Responses (RIR)
-https://github.com/RoyJames/room-impulse-responses
+---
 
-## results
+## Leaderboard Snapshot
 
 ### openai_whisper_small
 
-[eval with WER](history/openai_whisper_small_2025-11-07T15-06-55_2025-11-07T15-58-32.csv)
-submit score: 9.39393
-
-[eval with WER & apply lexicon](history/openai_whisper_small_2025-11-07T15-06-55_2025-11-07T19-33-53.csv)
-submit score: 9.87878
-
-[eval with normalized Levenshtein distance](history/openai_whisper_small_2025-11-08T11-10-10_0.0213_2025-11-08T11-31-15.csv)
-submit score: 8.43434
-
-[eval with normalized Levenshtein distance & apply lexicon]()
-submit score: not better since lexicon is not complete and some words are in english
-
-[eval with normalized Levenshtein distance + train with TPGBIR augmentation (3x augs, 25 epoch)](history/openai_whisper_small_2025-11-10T17-31-06_0.0597_2025-11-10T17-32-28.csv)
-submit score: 5.93939
-
-[eval with normalized Levenshtein distance + train with TPGBIR augmentation (5x augs, 10 epoch)](history/openai_whisper_small_2025-11-10T21-57-21_0.0380_2025-11-10T21-58-44.csv)
-submit score: 4.98989
-
-[eval with normalized Levenshtein distance + train with train_TPGBIR augmentation (5x augs, 10 epoch) + train with dict-sentence_TPGBIR augmentation (1x augs, 10 epoch)](history/openai_whisper_small_2025-11-11T21-26-09_0.0416_2025-11-11T21-27-34.csv)
-submit score: 5.67676
-
-[eval with normalized Levenshtein distance + train with train_TPGBIR augmentation (5x augs, 10 epoch) + train with dict-sentence_TPGBIR augmentation (1x augs, 10 epoch) + train with train_TPGBIR augmentation (5x augs, 10 epoch)](history/openai_whisper_small_2025-11-12T07-55-19_0.0282_2025-11-12T07-56-40.csv)
-submit score: 4.33333
-
-[eval with normalized Levenshtein distance + train with train_TPGBIR augmentation (5x augs, 10 epoch) + train with dict-sentence_TPGBIR augmentation (1x augs, 10 epoch) + train with train_TPGBIR augmentation (5x augs, 10 epoch) + train with dict-word_TPGBIR augmentation (1x augs, 10 epoch)](history/openai_whisper_small_2025-11-12T14-29-42_0.0308_2025-11-12T14-31-05.csv)
-submit score: 6.10101
-
-[eval with normalized Levenshtein distance + train with hybrid_TPGBIR (1x dict-sentence + 1x dict-word + 5x train) augmentation (5 epoch)](history/openai_whisper_small_2025-11-14T01-06-49_0.0274_2025-11-14T01-08-11.csv)
-submit score: 4.06060
+| Experiment                                                                                                                        | Notes                                                                                                             | Public Score |
+|------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|--------------|
+| [WER evaluation](history/openai_whisper_small_2025-11-07T15-06-55_2025-11-07T15-58-32.csv)                                         | Baseline without lexicon                                                                                          | 9.39393      |
+| [WER + lexicon](history/openai_whisper_small_2025-11-07T15-06-55_2025-11-07T19-33-53.csv)                                          | Lexicon hurts due to missing words/English terms                                                                  | 9.87878      |
+| [Normalized Levenshtein](history/openai_whisper_small_2025-11-08T11-10-10_0.0213_2025-11-08T11-31-15.csv)                          | Switch metric for better tonal robustness                                                                         | 8.43434      |
+| Normalized Levenshtein + lexicon                                                                                                   | Not better; lexicon coverage is incomplete                                                                        | —            |
+| [TPGBIR (3× augs, 25 epochs)](history/openai_whisper_small_2025-11-10T17-31-06_0.0597_2025-11-10T17-32-28.csv)                     | Adds tone-preserving augmentations                                                                                | 5.93939      |
+| [TPGBIR (5× augs, 10 epochs)](history/openai_whisper_small_2025-11-10T21-57-21_0.0380_2025-11-10T21-58-44.csv)                     | Shorter but stronger schedule                                                                                     | 4.98989      |
+| [train_TPGBIR 5× + dict-sentence_TPGBIR 1×](history/openai_whisper_small_2025-11-11T21-26-09_0.0416_2025-11-11T21-27-34.csv)       | Mixes corpus and lexicon-derived audio                                                                            | 5.67676      |
+| [train 5× → dict-sentence 1× → train 5×](history/openai_whisper_small_2025-11-12T07-55-19_0.0282_2025-11-12T07-56-40.csv)          | Stage-wise curriculum                                                                                             | 4.33333      |
+| [train 5× → dict-sentence 1× → train 5× → dict-word 1×](history/openai_whisper_small_2025-11-12T14-29-42_0.0308_2025-11-12T14-31-05.csv) | Additional dictionary-word phase slightly overfits                                                                | 6.10101      |
+| [Hybrid TPGBIR (1× dict-sent + 1× dict-word + 5× train), 5 epochs](history/openai_whisper_small_2025-11-14T01-06-49_0.0274_2025-11-14T01-08-11.csv) | Best-performing recipe                                                                                            | 4.06060      |
 
 ### openai_whisper_large_v3_turbo
 
-[eval with WER + train with hybrid_TPGBIR (1x dict-sentence + 1x dict-word + 5x train) augmentation (5 epoch)](history/openai_whisper_large_v3_turbo_2025-11-15T07-08-22_0.0294_2025-11-15T09-04-34.csv)
-submit score: 2.84848
+| Experiment                                                                                                                        | Public Score |
+|------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| [WER + hybrid TPGBIR (1× dict-sentence + 1× dict-word + 5× train), 5 epochs](history/openai_whisper_large_v3_turbo_2025-11-15T07-08-22_0.0294_2025-11-15T09-04-34.csv) | 2.84848      |
 
-stage-wise training plots:
+Stage-wise tracking for the hybrid curriculum:
 
-| | stage 0 (train_TPGBIR 5x) | stage 1 (dict-sentence_TPGBIR 1x) | stage 2 (train_TPGBIR 5x) | stage 3 (dict-word_TPGBIR 1x) |
-|---|---|---|---|---|
-| levenshtein distance | ![stage 0](history/0/levenshtein_plot.png) | ![stage 1](history/1/levenshtein_plot.png) | ![stage 2](history/2/levenshtein_plot.png) | ![stage 3](history/3/levenshtein_plot.png) |
-| loss | ![stage 0](history/0/loss_plot.png) | ![stage 1](history/1/loss_plot.png) | ![stage 2](history/2/loss_plot.png) | ![stage 3](history/3/loss_plot.png) |
-| submit score | 4.98989 | 5.67676 | 4.33333 | 6.10101 |
+| Metric / Stage                 | Stage 0 (train 5×)                                            | Stage 1 (dict-sentence 1×)                                   | Stage 2 (train 5×)                                           | Stage 3 (dict-word 1×)                                       |
+|--------------------------------|----------------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------|----------------------------------------------------------------|
+| Levenshtein distance           | ![stage 0](history/0/levenshtein_plot.png)                    | ![stage 1](history/1/levenshtein_plot.png)                   | ![stage 2](history/2/levenshtein_plot.png)                   | ![stage 3](history/3/levenshtein_plot.png)                   |
+| Loss                           | ![stage 0](history/0/loss_plot.png)                           | ![stage 1](history/1/loss_plot.png)                          | ![stage 2](history/2/loss_plot.png)                          | ![stage 3](history/3/loss_plot.png)                          |
+| Submit score                   | 4.98989                                                       | 5.67676                                                       | 4.33333                                                       | 6.10101                                                       |
 
 ### openai_whisper_medium
 
-### whisper note
+- Reserved for future experiments (no public submissions recorded yet).
+
+---
+
+## Whisper Model Notes
 
 ```
-usages of file in a model dir:
-.
-├── added_tokens.json -> tokenizer added tokens info
-├── config.json -> model architecture and hyperparameters
-├── generation_config.json -> generation parameters like num_beams
-├── merges.txt -> tokenizer merges for BPE
-├── model.safetensors -> model weights
-├── normalizer.json -> text normalizer rules
-├── preprocessor_config.json -> feature extractor config
-├── special_tokens_map.json -> tokenizer special tokens info
-├── tokenizer_config.json -> tokenizer config
-├── tokenizer.json -> tokenizer vocab and merges
-├── training_args.bin -> training arguments used in Trainer
-└── vocab.json -> tokenizer vocabulary
+Model directory contents
+├── added_tokens.json         # Extra tokenizer units
+├── config.json               # Model architecture + hyperparameters
+├── generation_config.json    # Decoding arguments (e.g., num_beams)
+├── merges.txt                # BPE merge rules
+├── model.safetensors         # Weights
+├── normalizer.json           # Text normalization
+├── preprocessor_config.json  # Feature extractor config
+├── special_tokens_map.json   # Special token mapping
+├── tokenizer_config.json     # Tokenizer metadata
+├── tokenizer.json            # Serialized vocab + merges
+├── training_args.bin         # Hugging Face Trainer arguments
+└── vocab.json                # Token frequencies
 ```
 
-#### terms
+Key terms:
 
 ```python
-total_steps = (num_train_epochs) * ceil(len(train_dataset) / effective_batch_size)
-
-effective_batch_size = per_device_train_batch_size *gradient_accumulation_steps* num_devices
+total_steps = num_train_epochs * ceil(len(train_dataset) / effective_batch_size)
+effective_batch_size = per_device_train_batch_size * gradient_accumulation_steps * num_devices
 ```
 
-- decoder_start_token_id
-in original tokenizer, model.config.decoder_start_token_id is "<|startoftranscript|>": 50258, in my custom tokenizer, i use `<s>` and `</s>` as bos and eos token
+- `decoder_start_token_id`: default Whisper uses `<|startoftranscript|>` (50258). Custom tokenizer swaps to `<s>` / `</s>` to align with seq2seq conventions.  
+- `num_beams`: count of hypotheses retained at each decoding step. Higher values explore diverse continuations (e.g., greedy = 1, beam search > 1).  
+- Tokenizer types referenced in `tokenizer_config.json`: word-level, subword-level (BPE, WordPiece, SentencePiece), and character-level vocabularies.
 
-- vocab
-- beam_num
-num_beams means how many candidates are considered in each next possible tokens
-ex: Candidate next tokens:
-"ba" (score 0.6)
-"pa" (score 0.3)
-"ka" (score 0.1)
-Greedy (num_beams=1): choose "ba"
-Greedy (num_beams=2): choose ["ba","pa"]
-- tokenizer types (in tokenizer_config.json)
-word level (each valid word is a token)
-sub-word level (Byte pair encoding, word piece, sentence piece)
-character level (each char is a token)
+---
 
-# DataCollatorSpeechSeq2SeqWithPadding
+## DataCollatorSpeechSeq2SeqWithPadding
 
-AudioDataset provides individual samples with variable-length audio features and text labels.
-DataCollatorSpeechSeq2SeqWithPadding combines individual samples into uniform batches for training. 
-```
-Sample 1:
-  input_features: [80, 523]   ← 523 time steps (0.52 sec audio)
-  labels: [15]                ← 15 tokens
-
-Sample 2:
-  input_features: [80, 1842]  ← 1842 time steps (1.84 sec audio)
-  labels: [28]                ← 28 tokens
-
-Sample 3:
-  input_features: [80, 891]   ← 891 time steps
-  labels: [22]                ← 22 tokens
-```
-To create a batch, DataCollatorSpeechSeq2SeqWithPadding pads both the audio features and text labels to the length of the longest sample in the batch.
-
-## 1. Pad Audio Features
-
-Pad all audio to **Longest in batch time steps** (max length):
+`AudioDataset` yields single samples with variable-length mel features and tokenized transcripts. The collator pads them into uniform batches:
 
 ```
-Sample 1: [80, 523]  → [80, Longest in batch]
-Sample 2: [80, 1842] → [80, Longest in batch]
-Sample 3: [80, 891]  → [80, Longest in batch]
-
-Result: Stack into batch [3, 80, Longest in batch]
+Sample 1: input_features [80, 523], labels [15]
+Sample 2: input_features [80, 1842], labels [28]
+Sample 3: input_features [80, 891], labels [22]
 ```
 
-## 2. Pad Text Labels
-
-Pad all labels to **Longest in batch** and use -100 for padding, since -100 tells PyTorch to ignore these positions in loss calculation:
-
-```
-Sample 1: [15] → original, -100, -100, ..., -100  (add 13 × -100)
-Sample 2: [28] → original                         (already longest)
-Sample 3: [22] → original, -100, -100, ..., -100  (add 6 × -100)
-
-Result: Stack into batch [3, 28]
-```
-
-## 3. Remove BOS Token from Labels (if present)
-
-During training, the model automatically adds BOS token. so if your labels already have it, you'd have it twice:
+1. **Pad audio features** to the longest time dimension in the batch, resulting in `[batch, 80, max_T]`.  
+2. **Pad labels** to the longest sequence using `-100` so PyTorch ignores padding in the loss.  
+3. **Strip duplicate BOS tokens** if transcripts already include `<s>`:
 
 ```python
 if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():
-  labels = labels[:, 1:]
+    labels = labels[:, 1:]
 ```
 
-```
-Labels with BOS:    [<s>, tok1, tok2, ..., </s>]
-Model adds BOS:     [<s>, <s>, tok1, tok2, ..., </s>]  ← Wrong!
+This prevents the trainer from inserting `<s>` twice.
 
-So remove it:       [tok1, tok2, ..., </s>]
-Model adds BOS:     [<s>, tok1, tok2, ..., </s>]       ← Correct!
-```
+---
 
-# AudioDataset
+## AudioDataset Overview
 
-## 1. get labels from csv file and convert to label ids
+1. **Read metadata** from CSV files containing `file_path` and `transcription`.  
+2. **Load waveforms** and convert to mel spectrograms (`[80, T]` where `T` depends on duration).  
+3. **Return feature + label pairs** that the collator pads before feeding them into Whisper.
 
-Read CSV file with columns: "file_path", "transcription"
-
-## 2. Load Audio Files and extract Mel Spectrogram Features
-
-Audio converted to frequency representation:
-
-- **80 frequency bins** (vertical axis)
-- **Variable time steps** (horizontal axis)
-
-output shape: [80, T] where T is the number of time steps depending on audio length
+These steps decouple audio preprocessing, text normalization, and batching so experiments remain reproducible across augmentations and model scales.
