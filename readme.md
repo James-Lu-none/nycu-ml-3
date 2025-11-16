@@ -14,7 +14,7 @@ End-to-end speech recognition system built on OpenAI Whisper variants. The proje
 │   └── train
 |       └── train
 ├── aggregate_data.py
-├── auto-pipeline.ipynb
+├── auto-pipeline.ipynb (deprecated)
 ├── build_tokenizer.py (deprecated)
 ├── dict_parse.py
 ├── history
