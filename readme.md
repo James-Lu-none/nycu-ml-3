@@ -10,22 +10,21 @@ End-to-end speech recognition system built on OpenAI Whisper variants. The proje
 .
 ├── data
 │   ├── test-random
+│   │   └── test-random
 │   └── train
-│       ├── fixed-train
-│       ├── lexicon.txt
-│       ├── noisy-train
-│       ├── sample.csv
-│       ├── train
-│       ├── train.csv
-│       └── train-toneless.csv
+|       └── train
+├── aggregate_data.py
+├── auto-pipeline.ipynb
+├── build_tokenizer.py (deprecated)
+├── dict_parse.py
 ├── history
-├── model
-├── output
-├── taiwanese_tokenizer
 ├── models.py
-├── build_tokenizer.py
+├── ods_to_csv.py
+├── pipeline.ipynb
 ├── prediction.py
 ├── preprocess.py
+├── readme.md
+├── test.py
 ├── train.py
 └── visualization.py
 ```
