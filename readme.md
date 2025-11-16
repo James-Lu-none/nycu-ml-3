@@ -24,7 +24,6 @@ End-to-end speech recognition system built on OpenAI Whisper variants. The proje
 ├── prediction.py
 ├── preprocess.py
 ├── readme.md
-├── test.py
 ├── train.py
 └── visualization.py
 ```
@@ -32,7 +31,6 @@ End-to-end speech recognition system built on OpenAI Whisper variants. The proje
 - `data/`: raw and augmented corpora, metadata, lexicon resources.  
 - `model/`: checkpoints grouped by model choice and timestamp.  
 - `history/`: CSV logs and visualizations for each training stage.  
-- `taiwanese_tokenizer/`: custom tokenizer artifacts referenced by `build_tokenizer.py`.  
 - Entry scripts: `preprocess.py`, `train.py`, `prediction.py`, `visualization.py`.
 
 ---
