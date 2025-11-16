@@ -32,13 +32,13 @@
 run pipeline.ipynb or run commands below step by step:
 
 ```bash
-# perform training data argumentation from 
+# perform training data augmentation from 
 # InPath = "./data/train/train"
 # InLabelPath = "./data/train/train-toneless.csv"
 # to
 # OutPath = "./data/train/tmp-augmented-audio"
 # OutLabelPath = "./data/train/tmp-augmented-audio/metadata.csv"
-# during the aumentation, all audio files are resampled to 16kHz
+# during the augmentation, all audio files are resampled to 16kHz
 python preprocess.py
 
 # use dataset "tmp-augmented-audio" to train model "openai_whisper_small" with evaluation function "wer"
@@ -172,7 +172,7 @@ Sample 1:
   labels: [15]                ← 15 tokens
 
 Sample 2:
-  input_features: [80, 1842]  ← 1842 time steps (1.84 se=c audio)
+  input_features: [80, 1842]  ← 1842 time steps (1.84 sec audio)
   labels: [28]                ← 28 tokens
 
 Sample 3:
