@@ -95,8 +95,6 @@ class visualization:
 
         # Merge predicted and ground truth on id
         merged = predicted_df.merge(gt_df, on='id', suffixes=('_pred', '_gt'))
-        
-        merged.to_csv("merged_predictions.csv", index=False)
 
         def align_words(reference, hypothesis):
             """Return aligned word pairs using Levenshtein backtracking."""
