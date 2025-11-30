@@ -138,8 +138,8 @@ MLD: Mean Levenshtein Distance
 
 | Experiment                                                                                                                        | Public Score |
 |------------------------------------------------------------------------------------------------------------------------------------|--------------|
-| [NLD + hybrid TPGBIR (1× dict-sentence + 1× dict-word + 5× train), 5 epochs](history/openai_whisper_large_v3_turbo_2025-11-15T07-08-22_0.0294_2025-11-15T09-04-34.csv) | 2.84848      |
-| [NLD + hybrid TPGBIR (1× dict-sentence + 1× dict-word + 5× train), 5 epochs round 2](history/openai_whisper_large_v3_turbo_2025-11-16T11-38-20_0.0268_2025-11-16T12-13-51.csv) | 3.14141      |
+| [NLD + hybrid TPGBIR (1× dict-sentence + 1× dict-word + 6× train), 5 epochs](history/openai_whisper_large_v3_turbo_2025-11-15T07-08-22_0.0294_2025-11-15T09-04-34.csv) | 2.84848      |
+| [NLD + hybrid TPGBIR (1× dict-sentence + 1× dict-word + 6× train), 5 epochs round 2](history/openai_whisper_large_v3_turbo_2025-11-16T11-38-20_0.0268_2025-11-16T12-13-51.csv) | 3.14141      |
 
 
 #### Stage-wise tracking for training with hybrid TPGBIR (1× dict-sentence + 1× dict-word + 5× train)
