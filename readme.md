@@ -111,19 +111,19 @@ mv ESC-50-master/audio/ background_noises
 ### openai_whisper_small
 
 WER: Word Error Rate
-NLD: Normalized Levenshtein Distance
+MLD: Mean Levenshtein Distance
 
 | Experiment                                                                                                                         | Notes                                                                                                             | Public Score |
 |------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|--------------|
 | [WER evaluation](history/openai_whisper_small_2025-11-07T15-06-55_2025-11-07T15-58-32.csv)                                         | Baseline without lexicon                                                                                          | 9.39393      |
 | [WER + lexicon](history/openai_whisper_small_2025-11-07T15-06-55_2025-11-07T19-33-53.csv)                                          | Lexicon hurts due to missing words/English terms                                                                  | 9.87878      |
-| [NLD](history/openai_whisper_small_2025-11-08T11-10-10_0.0213_2025-11-08T11-31-15.csv)                                             | Switch metric for better tonal robustness                                                                         | 8.43434      |
-| [NLD, TPGBIR (3× augs, 25 epochs)](history/openai_whisper_small_2025-11-10T17-31-06_0.0597_2025-11-10T17-32-28.csv)                     | Adds RIR and background augmentations                                                                                | 5.93939      |
-| [NLD, TPGBIR (5× augs, 10 epochs)](history/openai_whisper_small_2025-11-10T21-57-21_0.0380_2025-11-10T21-58-44.csv)                     | use more augmentation with less epoch                                                                                     | 4.98989      |
-| [NLD, train_TPGBIR 5× + dict-sentence_TPGBIR 1×](history/openai_whisper_small_2025-11-11T21-26-09_0.0416_2025-11-11T21-27-34.csv)       | Adds additional sentence dataset from sutian dictionary                                                                            | 5.67676      |
-| [NLD, train 5× → dict-sentence 1× → train 5×](history/openai_whisper_small_2025-11-12T07-55-19_0.0282_2025-11-12T07-56-40.csv)          | Stage-wise curriculum                                                                                             | 4.33333      |
-| [NLD, train 5× → dict-sentence 1× → train 5× → dict-word 1×](history/openai_whisper_small_2025-11-12T14-29-42_0.0308_2025-11-12T14-31-05.csv) | Adds additional word dataset from sutian dictionary                                                                 | 6.10101      |
-| [NLD, Hybrid TPGBIR (1× dict-sent + 1× dict-word + 5× train), 5 epochs](history/openai_whisper_small_2025-11-14T01-06-49_0.0274_2025-11-14T01-08-11.csv) | packs original training data, word dataset and sentence dataset from sutian dictionary, with augmentation 5x, 1x, 1x      | 4.06060      |
+| [MLD](history/openai_whisper_small_2025-11-08T11-10-10_0.0213_2025-11-08T11-31-15.csv)                                             | Switch metric for better tonal robustness                                                                         | 8.43434      |
+| [MLD, TPGBIR (3× augs, 25 epochs)](history/openai_whisper_small_2025-11-10T17-31-06_0.0597_2025-11-10T17-32-28.csv)                     | Adds RIR and background augmentations                                                                                | 5.93939      |
+| [MLD, TPGBIR (5× augs, 10 epochs)](history/openai_whisper_small_2025-11-10T21-57-21_0.0380_2025-11-10T21-58-44.csv)                     | use more augmentation with less epoch                                                                                     | 4.98989      |
+| [MLD, train_TPGBIR 5× + dict-sentence_TPGBIR 1×](history/openai_whisper_small_2025-11-11T21-26-09_0.0416_2025-11-11T21-27-34.csv)       | Adds additional sentence dataset from sutian dictionary                                                                            | 5.67676      |
+| [MLD, train 5× -> dict-sentence 1× -> train 5×](history/openai_whisper_small_2025-11-12T07-55-19_0.0282_2025-11-12T07-56-40.csv)          | Stage-wise curriculum                                                                                             | 4.33333      |
+| [MLD, train 5× -> dict-sentence 1× -> train 5× -> dict-word 1×](history/openai_whisper_small_2025-11-12T14-29-42_0.0308_2025-11-12T14-31-05.csv) | Adds additional word dataset from sutian dictionary                                                                 | 6.10101      |
+| [MLD, Hybrid TPGBIR (1× dict-sent + 1× dict-word + 5× train), 5 epochs](history/openai_whisper_small_2025-11-14T01-06-49_0.0274_2025-11-14T01-08-11.csv) | packs original training data, word dataset and sentence dataset from sutian dictionary, with augmentation 5x, 1x, 1x      | 4.06060      |
 | [WER, hybrid TPGBIR (1× dict-sentence + 1× dict-word + 5× train), 5 epochs](history/openai_whisper_small_2025-11-15T12-58-10_0.1176_2025-11-15T12-59-32.csv) | packs original training data, word dataset and sentence dataset from sutian dictionary, with augmentation 5x, 1x, 1x but use WER  | 4.92929     |
 
 #### Stage-wise tracking for the hybrid curriculum:
