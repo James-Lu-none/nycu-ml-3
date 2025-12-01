@@ -5,6 +5,7 @@ from transformers import (
     AutoModelForSpeechSeq2Seq,
     AutoProcessor
 )
+from peft import LoraConfig, get_peft_model
 
 def openai_whisper_small():
     # 0.2B parameters
@@ -139,3 +140,28 @@ def custom(model_dir):
     model.config.suppress_tokens = []
     
     return processor, model
+
+def apply_lora(processor, model, lora_r=8, lora_alpha=16, lora_dropout=0.05):
+    print(f"Applying LoRA with r={lora_r}, alpha={lora_alpha}, dropout={lora_dropout}")
+    
+    lora_config = LoraConfig(
+        r=lora_r,
+        lora_alpha=lora_alpha,
+        target_modules=["q_proj", "v_proj"],  # Whisper attention layers
+        lora_dropout=lora_dropout,
+        bias="none",
+        task_type="CAUSAL_LM"
+    )
+    
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+    
+    return processor, model
+
+def openai_whisper_large_v3_turbo_lora(lora_r=8, lora_alpha=16, lora_dropout=0.05):
+    processor, model = openai_whisper_large_v3_turbo()
+    return apply_lora(processor, model, lora_r, lora_alpha, lora_dropout)
+
+def openai_whisper_small_lora(lora_r=8, lora_alpha=16, lora_dropout=0.05):
+    processor, model = openai_whisper_small()
+    return apply_lora(processor, model, lora_r, lora_alpha, lora_dropout)
