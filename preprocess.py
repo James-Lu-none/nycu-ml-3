@@ -1,134 +1,194 @@
 import argparse
-import glob, os
+import os
 import numpy as np
 from scipy.io import wavfile
-from audiomentations import Compose, SomeOf, AddGaussianNoise, AddGaussianSNR, TimeStretch, PitchShift, Shift, AddBackgroundNoise, AddShortNoises, PolarityInversion, ApplyImpulseResponse
+from audiomentations import Compose, AddGaussianSNR, TimeStretch, PitchShift, AddBackgroundNoise, ApplyImpulseResponse
 from audiomentations.core.audio_loading_utils import load_sound_file
 import nlpaug.augmenter.audio as naa
 import nlpaug.flow as naf
 import pandas as pd
 from tqdm import tqdm
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing
 warnings.filterwarnings("ignore", category=UserWarning)
 
 BASE = "./data/train/train"
-
 background_noises_path = os.path.join(BASE, "background_noises")
-short_noises_path = os.path.join(BASE, "short_noises")
 rir_path = os.path.join(BASE, "rir")
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--aug_type", type=str, required=True)
-parser.add_argument("--src_dir", type=str, required=True)
-parser.add_argument("--label_file", type=str, required=True)
-parser.add_argument("--dist_dir", type=str, required=True)
-parser.add_argument("--n_augmentations", type=int, required=True)
-args = parser.parse_args()
+AUG1 = None
+AUG2 = None
+SR = 16000
 
-InPath = os.path.join(BASE, args.src_dir)
-InLabelPath = os.path.join(BASE, args.label_file)
-OutPath = os.path.join(BASE, args.dist_dir)
-OutLabelPath = os.path.join(OutPath, "metadata.csv")
+def init_worker(aug_type):
+    """
+    Called ONCE per worker process.
+    Creates augmentation pipelines once → avoids huge overhead.
+    """
+    global AUG1, AUG2, SR
+    AUG1, AUG2 = get_augmenters(aug_type)
+    print(f"[Worker Init] Augmenters initialized for aug_type={aug_type}")
 
 
-print("generating augmented data for type:", args.aug_type)
-print("input path:", InPath)
-print("input label file:", InLabelPath)
-print("output path:", OutPath)
-print("output label file:", OutLabelPath)
-print("number of augmentations per file:", args.n_augmentations)
-
-if args.aug_type not in ["TPG", "TPGB", "TPGBIR"]:
-    raise ValueError("Invalid dataset name. Choose from: TPG, TPGB, TPGBIR")
-os.system(f"rm -rf {OutPath}")
-os.makedirs(OutPath, exist_ok=True)
-
-sr = 16000
-
-augment1 = naf.Sometimes([
-    naa.VtlpAug(sampling_rate=sr, zone=(0.0, 1.0), coverage=1.0, factor=(0.9, 1.1)),
+# -------------------------------
+# Build augmentation pipelines
+# -------------------------------
+def get_augmenters(aug_type):
+    aug1 = naf.Sometimes([
+        naa.VtlpAug(sampling_rate=SR, zone=(0.0, 1.0), coverage=1.0, factor=(0.9, 1.1)),
     ], aug_p=0.4)
 
-augment_TPG = Compose([
-    AddGaussianSNR(min_snr_db=10, max_snr_db=30, p=0.2),
-    TimeStretch(min_rate=0.8, max_rate=1.2, leave_length_unchanged=False, p=0.4),
-    PitchShift(min_semitones=-4, max_semitones=4, p=0.4),
-])
+    aug_TPG = Compose([
+        AddGaussianSNR(min_snr_db=10, max_snr_db=30, p=0.2),
+        TimeStretch(min_rate=0.8, max_rate=1.2, leave_length_unchanged=False, p=0.4),
+        PitchShift(min_semitones=-4, max_semitones=4, p=0.4),
+    ])
 
-augment_TPGB = Compose([
-    AddGaussianSNR(min_snr_db=10, max_snr_db=30, p=0.2),
-    TimeStretch(min_rate=0.8, max_rate=1.2, leave_length_unchanged=False, p=0.4),
-    PitchShift(min_semitones=-4, max_semitones=4, p=0.4),
-    AddBackgroundNoise(
-        sounds_path=background_noises_path,
-        min_snr_db=10,
-        max_snr_db=30.0,
-        p=0.4),
-])
+    aug_TPGB = Compose([
+        AddGaussianSNR(min_snr_db=10, max_snr_db=30, p=0.2),
+        TimeStretch(min_rate=0.8, max_rate=1.2, leave_length_unchanged=False, p=0.4),
+        PitchShift(min_semitones=-4, max_semitones=4, p=0.4),
+        AddBackgroundNoise(
+            sounds_path=background_noises_path,
+            min_snr_db=10,
+            max_snr_db=30,
+            p=0.4),
+    ])
 
-augment_TPGBIR = Compose([
-    AddGaussianSNR(min_snr_db=10, max_snr_db=30, p=0.2),
-    TimeStretch(min_rate=0.8, max_rate=1.2, leave_length_unchanged=False, p=0.4),
-    PitchShift(min_semitones=-4, max_semitones=4, p=0.4),
-    AddBackgroundNoise(
-        sounds_path=background_noises_path,
-        min_snr_db=10,
-        max_snr_db=30.0,
-        p=0.4),
-    # AddShortNoises(
-    # sounds_path=short_noises_path,
-    # min_snr_db=10,
-    # max_snr_db=30.0,
-    # noise_rms="relative_to_whole_input",
-    # min_time_between_sounds=2.0,
-    # max_time_between_sounds=8.0,
-    # p=0.3),
-    ApplyImpulseResponse(
-            ir_path=rir_path, p=0.4
+    aug_TPGBIR = Compose([
+        AddGaussianSNR(min_snr_db=10, max_snr_db=30, p=0.2),
+        TimeStretch(min_rate=0.8, max_rate=1.2, leave_length_unchanged=False, p=0.4),
+        PitchShift(min_semitones=-4, max_semitones=4, p=0.4),
+        AddBackgroundNoise(
+            sounds_path=background_noises_path,
+            min_snr_db=10,
+            max_snr_db=30,
+            p=0.4),
+        ApplyImpulseResponse(ir_path=rir_path, p=0.4)
+    ])
+
+    return aug1, {"TPG": aug_TPG, "TPGB": aug_TPGB, "TPGBIR": aug_TPGBIR}[aug_type]
+
+def process_single_file(file, inLabels_dict, InPath, OutPath, n_augmentations):
+    """
+    Runs inside each process.
+    Uses global AUG1 and AUG2 that were set in init_worker().
+    """
+    global AUG1, AUG2
+
+    try:
+        file_id = os.path.splitext(file)[0].lower().strip()
+        text = inLabels_dict.get(file_id, None)
+
+        if text is None:
+            return {"error": f"No label for {file}", "labels": []}
+
+        # Load WAV
+        samples, sample_rate = load_sound_file(
+            os.path.join(InPath, file),
+            sample_rate=None
         )
-])
 
-inLabels = pd.read_csv(InLabelPath)
-outLabels = []
+        results = []
 
-files = [f for f in os.listdir(InPath) if f.endswith(".wav")]
-for file in tqdm(files, desc="Processing files", unit="file"):
-    
-    file_id = os.path.splitext(file)[0].strip()
-    inLabels["id_norm"] = inLabels["id"].astype(str).str.strip().str.lower()
-    
-    row = inLabels[inLabels["id_norm"] == file_id]
-    if row.empty:
-        tqdm.write(f"[WARNING] No label found for file {file}")
-        continue
-    text = row.iloc[0]["text"]
+        for i in range(n_augmentations):
+            outname = f"{file_id}_aug{i+1}.wav"
 
-    samples, sample_rate = load_sound_file(
-        os.path.join(InPath, file), sample_rate=None
-    )
-    # Augment/transform/perturb the audio data
-    for i in range(args.n_augmentations):
-        file_aug = f"{os.path.splitext(file)[0]}_aug{i+1}.wav"
-        augmented_samples1 = augment1.augment(samples)
-        # augment1 may return a list; ensure we pass a single array to augment2
-        src = augmented_samples1[0] if isinstance(augmented_samples1, (list, tuple)) else augmented_samples1
-        augment2 = None
-        match args.aug_type:
-            case "TPG":
-                augment2 = augment_TPG
-            case "TPGB":
-                augment2 = augment_TPGB
-            case "TPGBIR":
-                augment2 = augment_TPGBIR
-        augmented_samples2 = augment2(samples=src, sample_rate=sample_rate)
-        wavfile.write(
-            os.path.join(OutPath, file_aug), rate=sample_rate, data=augmented_samples2
-        )
-        outLabels.append({
-            "file_name": file_aug,
-            "transcription": text
-        })
+            # Aug 1
+            aug1 = AUG1.augment(samples)
+            src = aug1[0] if isinstance(aug1, (list, tuple)) else aug1
 
-outLabels = pd.DataFrame(outLabels)
-outLabels.to_csv(OutLabelPath, index=False)
-print("output labels saved to:", OutLabelPath)
+            # Aug 2
+            aug2 = AUG2(samples=src, sample_rate=sample_rate)
+
+            # Save
+            wavfile.write(
+                os.path.join(OutPath, outname),
+                rate=sample_rate,
+                data=aug2
+            )
+
+            results.append({"file_name": outname, "transcription": text})
+
+        return {"error": None, "labels": results}
+
+    except Exception as e:
+        return {"error": f"Error processing {file}: {e}", "labels": []}
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--aug_type", type=str, required=True)
+    parser.add_argument("--src_dir", type=str, required=True)
+    parser.add_argument("--label_file", type=str, required=True)
+    parser.add_argument("--dist_dir", type=str, required=True)
+    parser.add_argument("--n_augmentations", type=int, required=True)
+    parser.add_argument("--n_workers", type=int, default=None)
+    args = parser.parse_args()
+
+    if args.n_workers is None:
+        args.n_workers = multiprocessing.cpu_count()
+
+    InPath = os.path.join(BASE, args.src_dir)
+    InLabelPath = os.path.join(BASE, args.label_file)
+    OutPath = os.path.join(BASE, args.dist_dir)
+    OutLabelPath = os.path.join(OutPath, "metadata.csv")
+
+    os.system(f"rm -rf {OutPath}")
+    os.makedirs(OutPath, exist_ok=True)
+
+    # Load label CSV once
+    df = pd.read_csv(InLabelPath)
+    df["id_norm"] = df["id"].str.lower().str.strip()
+    inLabels_dict = dict(zip(df["id_norm"], df["text"]))
+
+    files = [f for f in os.listdir(InPath) if f.endswith(".wav")]
+    print(f"Found {len(files)} audio files")
+
+    outLabels = []
+    errors = []
+
+    # Multiprocessing with initializer (important!)
+    with ProcessPoolExecutor(
+        max_workers=args.n_workers,
+        initializer=init_worker,
+        initargs=(args.aug_type,)
+    ) as executor:
+
+        futures = {
+            executor.submit(
+                process_single_file,
+                file,
+                inLabels_dict,
+                InPath,
+                OutPath,
+                args.n_augmentations
+            ): file
+            for file in files
+        }
+
+        with tqdm(total=len(files), desc="Processing", unit="file") as pbar:
+            for fut in as_completed(futures):
+                file = futures[fut]
+                try:
+                    result = fut.result()
+                    if result["error"]:
+                        errors.append(result["error"])
+                    else:
+                        outLabels.extend(result["labels"])
+                except Exception as e:
+                    errors.append(f"Crash on {file}: {e}")
+                pbar.update(1)
+
+    if outLabels:
+        pd.DataFrame(outLabels).to_csv(OutLabelPath, index=False)
+        print(f"✓ Saved {len(outLabels)} augmented samples → {OutLabelPath}")
+
+    if errors:
+        with open(os.path.join(OutPath, "errors.log"), "w") as f:
+            f.write("\n".join(errors))
+        print(f"⚠ {len(errors)} errors → see errors.log")
+
+
+if __name__ == "__main__":
+    main()
