@@ -20,6 +20,9 @@ logging.getLogger("transformers.tokenization_utils_base").setLevel(logging.ERROR
 
 BASE = "data/train/train"
 MODEL_ROOT = "model"
+
+os.makedirs(MODEL_ROOT, exist_ok=True)
+
 @dataclass
 class DataCollatorSpeechSeq2SeqWithPadding:
     processor: Any
