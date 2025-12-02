@@ -136,6 +136,12 @@ class Train:
         self.eval_function = eval_function
         os.makedirs(os.path.join(MODEL_ROOT,self.model_choice), exist_ok=True)
 
+    def measure_batch_memory(self, batch):
+        torch.cuda.reset_peak_memory_stats()
+        with torch.no_grad():
+            self.model(**batch)
+        return torch.cuda.max_memory_allocated()
+
     def load_model(self):
         try:
             if self.model_state_path is not None:
@@ -167,11 +173,12 @@ class Train:
         from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
         
         os.environ["WANDB_PROJECT"] = "whisper-finetune-project"
+        batch_size = 2
         args = Seq2SeqTrainingArguments(
             output_dir=f"{MODEL_ROOT}/{self.model_choice}",
 
-            per_device_train_batch_size=4,
-            per_device_eval_batch_size=4,
+            per_device_train_batch_size=batch_size,
+            per_device_eval_batch_size=batch_size,
             gradient_accumulation_steps=16,
 
             max_grad_norm=1.0,
@@ -241,6 +248,22 @@ class Train:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(
             processor=self.processor,
         )
+
+        train_loader = DataLoader(
+            self.train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            collate_fn=data_collator,
+            num_workers=1,
+            pin_memory=True
+        )
+        batch = next(iter(train_loader))
+
+        torch.cuda.reset_peak_memory_stats()
+        _ = {k: v.cuda() for k, v in batch.items()}
+        used = torch.cuda.max_memory_allocated() / 1024**2
+        print(f"Batch size: {batch_size}, Estimated GPU memory for batch: {used:.2f} MB")
+
         compute_metrics = None
         if self.eval_function == "wer":
             compute_metrics = compute_metrics_wer
