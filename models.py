@@ -3,9 +3,10 @@ from transformers import (
     WhisperTokenizerFast,
     WhisperProcessor,
     AutoModelForSpeechSeq2Seq,
-    AutoProcessor
+    AutoProcessor,
+    BitsAndBytesConfig
 )
-from peft import LoraConfig, get_peft_model, TaskType, PeftModel, PeftConfig, PeftType
+from peft import LoraConfig, get_peft_model, TaskType, PeftModel, PeftConfig, PeftType, prepare_model_for_kbit_training
 import torch
 
 def openai_whisper_small():
@@ -220,7 +221,7 @@ class WhisperTuner(PeftModel):
             model_kwargs["past_key_values"] = past_key_values
 
         return model_kwargs
-    
+
 def apply_lora(processor, model, r=8, alpha=16, dropout=0.05):
 
     lora_config = LoraConfig(
@@ -246,3 +247,24 @@ def openai_whisper_large_v3_turbo_lora(lora_r=8, lora_alpha=16, lora_dropout=0.0
 def openai_whisper_small_lora(lora_r=8, lora_alpha=16, lora_dropout=0.05):
     processor, model = openai_whisper_small()
     return apply_lora(processor, model, lora_r, lora_alpha, lora_dropout)
+
+def openai_whisper_large_v3_turbo_4bit(lora_r=8, lora_alpha=16, lora_dropout=0.05):
+    quant_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type='nf4'
+    )
+    base_model = AutoModelForSpeechSeq2Seq.from_pretrained(
+        'openai/whisper-large-v3-turbo',
+        quantization_config=quant_config,
+        torch_dtype=torch.float16,
+        use_cache=False
+    )
+    
+    base_model = prepare_model_for_kbit_training(base_model, use_gradient_checkpointing=False)
+    processor = AutoProcessor.from_pretrained(
+        'openai/whisper-large-v3-turbo',
+        task="transcribe"
+    )
+    return apply_lora(processor, base_model, lora_r, lora_alpha, lora_dropout)
