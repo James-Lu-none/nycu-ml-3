@@ -5,7 +5,8 @@ from transformers import (
     AutoModelForSpeechSeq2Seq,
     AutoProcessor
 )
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, TaskType, PeftModel, PeftConfig, PeftType
+import torch
 
 def openai_whisper_small():
     # 0.2B parameters
@@ -141,21 +142,101 @@ def custom(model_dir):
     
     return processor, model
 
-def apply_lora(processor, model, lora_r=8, lora_alpha=16, lora_dropout=0.05):
-    print(f"Applying LoRA with r={lora_r}, alpha={lora_alpha}, dropout={lora_dropout}")
+# fix TypeError: WhisperForConditionalGeneration.forward() got an unexpected keyword argument 'input_ids'
+# https://discuss.huggingface.co/t/unexpected-keywork-argument/91356/3
+# https://github.com/huggingface/peft/issues/1988
+class WhisperTuner(PeftModel):
+    def __init__(self, model: torch.nn.Module, peft_config: PeftConfig, adapter_name: str = "default") -> None:
+        super().__init__(model, peft_config, adapter_name)
+        self.base_model_prepare_inputs_for_generation = self.base_model.prepare_inputs_for_generation
+        self.base_model_prepare_encoder_decoder_kwargs_for_generation = (
+            self.base_model._prepare_encoder_decoder_kwargs_for_generation
+        )
+
+    def forward(
+            self,
+            attention_mask=None,
+            decoder_input_ids=None,
+            decoder_attention_mask=None,
+            decoder_inputs_embeds=None,
+            labels=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
+            task_ids=None,
+            **kwargs,
+    ):
+        peft_config = self.active_peft_config
+        if not peft_config.is_prompt_learning:
+            if peft_config.peft_type == PeftType.POLY:
+                kwargs["task_ids"] = task_ids
+
+            with self._enable_peft_forward_hooks(**kwargs):
+                kwargs = {k: v for k, v in kwargs.items() if k not in self.special_peft_forward_args}
+                return self.base_model(
+                    attention_mask=attention_mask,
+                    decoder_input_ids=decoder_input_ids,
+                    decoder_attention_mask=decoder_attention_mask,
+                    decoder_inputs_embeds=decoder_inputs_embeds,
+                    labels=labels,
+                    output_attentions=output_attentions,
+                    output_hidden_states=output_hidden_states,
+                    return_dict=return_dict,
+                    **kwargs,
+                )
+
+    def generate(self, **kwargs):
+        peft_config = self.active_peft_config
+        self.base_model.prepare_inputs_for_generation = self.prepare_inputs_for_generation
+        self.base_model._prepare_encoder_decoder_kwargs_for_generation = (
+            self._prepare_encoder_decoder_kwargs_for_generation
+        )
+        try:
+            if not peft_config.is_prompt_learning:
+                with self._enable_peft_forward_hooks(**kwargs):
+                    kwargs = {k: v for k, v in kwargs.items() if k not in self.special_peft_forward_args}
+                    outputs = self.base_model.generate(**kwargs)
+        except:
+            self.base_model.prepare_inputs_for_generation = self.base_model_prepare_inputs_for_generation
+            self.base_model._prepare_encoder_decoder_kwargs_for_generation = (
+                self.base_model_prepare_encoder_decoder_kwargs_for_generation
+            )
+            raise
+        else:
+            self.base_model.prepare_inputs_for_generation = self.base_model_prepare_inputs_for_generation
+            self.base_model._prepare_encoder_decoder_kwargs_for_generation = (
+                self.base_model_prepare_encoder_decoder_kwargs_for_generation
+            )
+            return outputs
+
+    def prepare_inputs_for_generation(self, *args, task_ids: torch.Tensor = None, **kwargs):
+        peft_config = self.active_peft_config
+        model_kwargs = self.base_model_prepare_inputs_for_generation(*args, **kwargs)
+        if peft_config.peft_type == PeftType.POLY:
+            model_kwargs["task_ids"] = task_ids
+        if model_kwargs["past_key_values"] is None and peft_config.peft_type == PeftType.PREFIX_TUNING:
+            batch_size = model_kwargs["decoder_input_ids"].shape[0]
+            past_key_values = self.get_prompt(batch_size)
+            model_kwargs["past_key_values"] = past_key_values
+
+        return model_kwargs
     
+def apply_lora(processor, model, r=8, alpha=16, dropout=0.05):
+
     lora_config = LoraConfig(
-        r=lora_r,
-        lora_alpha=lora_alpha,
-        target_modules=["q_proj", "v_proj"],  # Whisper attention layers
-        lora_dropout=lora_dropout,
-        bias="none",
-        task_type="CAUSAL_LM"
+        r=r,
+        lora_alpha=alpha,
+        lora_dropout=dropout,
+        task_type=TaskType.SEQ_2_SEQ_LM,
+        target_modules=[
+            "k_proj",
+            "q_proj",
+            "v_proj",
+            "out_proj",
+        ]
     )
-    
-    model = get_peft_model(model, lora_config)
-    model.print_trainable_parameters()
-    
+
+    model = WhisperTuner(model, lora_config)
     return processor, model
 
 def openai_whisper_large_v3_turbo_lora(lora_r=8, lora_alpha=16, lora_dropout=0.05):
