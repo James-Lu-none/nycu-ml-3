@@ -15,10 +15,11 @@ dict_sentence_df = pd.read_csv(dict_sentence_csv)
 dict_word_df = pd.read_csv(dict_word_csv)
 
 hybrid_dir = os.path.join(BASE, "hybrid")
+hybrid_csv = os.path.join(BASE, "hybrid.csv")
 
 os.system(f"rm -rf {hybrid_dir}")
+os.system(f"rm -f {hybrid_csv}")
 os.makedirs(hybrid_dir, exist_ok=True)
-hybrid_csv = os.path.join(hybrid_dir, "metadata.csv")
 
 def check_conflicts(df, name):
     if df['id'].duplicated().any():
