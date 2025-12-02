@@ -307,7 +307,7 @@ class Train:
         print(f"Loss plot saved to: {loss_plot_path}")
 
         plt.figure()
-        plt.plot(df["step"], df[self.eval_function], marker="o")
+        plt.plot(df["step"], df[f"eval_{self.eval_function}"], marker="o")
         plt.xlabel("Step")
         plt.ylabel(f"Normalized {self.eval_function}")
         plt.title(f"{self.eval_function} Distance over Training")
