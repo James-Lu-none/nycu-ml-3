@@ -150,6 +150,12 @@ MLD: Mean Levenshtein Distance
 | Loss                           | ![stage 0](history/large_v3_turbo/0/loss_plot.png)                          | ![stage 1](history/large_v3_turbo/1/loss_plot.png)                          |
 | Submit score                   | 2.84848 | 3.14141 |
 
+### openai_whisper_large_v3_turbo_QLoRA_NF4
+
+| Experiment                                                                                                                        | Public Score |
+|------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| [NLD + hybrid TPGBIR (1× dict-sentence + 1× dict-word + 6× train), 5 epochs](history/openai_whisper_large_v3_turbo_4bit_2025-12-05T23-06-27_0.1649_2025-12-05T23-09-16.csv) | 10.08080      |
+
 ---
 
 ## Whisper Model Notes
